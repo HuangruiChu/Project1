@@ -215,7 +215,6 @@ class MtcnnDetector(object):
             boxes after calibration
         """
         # original wider face data
-        im = cv2.cvtColor(np.asarray(im),cv2.COLOR_RGB2BGR)
         h, w, c = im.shape
         net_size = 12
         current_scale = float(net_size) / self.min_face_size    # find initial scale
@@ -325,7 +324,6 @@ class MtcnnDetector(object):
             boxes after calibration
         """
         # im: an input image
-        im = cv2.cvtColor(np.asarray(im),cv2.COLOR_RGB2BGR)
         h, w, c = im.shape
 
         if dets is None:
@@ -442,7 +440,6 @@ class MtcnnDetector(object):
             landmarks after calibration
 
         """
-        im = cv2.cvtColor(np.asarray(im),cv2.COLOR_RGB2BGR) 
         h, w, c = im.shape
 
         if dets is None:
@@ -624,4 +621,58 @@ def vis_face(im_array, dets, landmarks, save_name):
     plt.axis("off")
     fig.savefig(save_name,pad_inches=0.0)
     fig.show()
+
+    
+def draw_face(im_array, dets, landmarks):
+    """Visualize detection results before and after calibration
+
+    Parameters:
+    ----------
+    im_array: numpy.ndarray, shape(1, c, h, w)
+        test image in rgb
+    dets: numpy.ndarray([[x1 y1 x2 y2 score]])
+        detection results before calibration
+    landmarks: 五个点的坐标
+    Returns:
+    image
+    -------
+    """
+
+    for i in range(dets.shape[0]):
+        bbox = dets[i, :4]   
+        cv2.rectangle(im_array, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (0, 0, 255), 2)
+        font = cv2.FONT_HERSHEY_DUPLEX
+        cv2.putText(im_array, str(dets[i,4])[:4], (int(bbox[2]), int(bbox[1])), font, 1.0, (0, 0, 255), 1)
+    if landmarks is not None:
+        for i in range(landmarks.shape[0]):
+            landmarks_one = landmarks[i, :]
+            landmarks_one = landmarks_one.reshape((5, 2))
+            for j in range(5):
+                cv2.circle(im_array,(int(landmarks_one[j, 0]), int(landmarks_one[j, 1])), radius=10,color=1)
+  
+    
+    return im_array
+
+def fig2data(fig):
+    """
+    fig = plt.figure()
+    image = fig2data(fig)
+    @brief Convert a Matplotlib figure to a 4D numpy array with RGBA channels and return it
+    @param fig a matplotlib figure
+    @return a numpy 3D array of RGBA values
+    """
+    import PIL.Image as Image
+    # draw the renderer
+    fig.canvas.draw()
+ 
+    # Get the RGBA buffer from the figure
+    w, h = fig.canvas.get_width_height()
+    buf = np.fromstring(fig.canvas.tostring_argb(), dtype=np.uint8)
+    buf.shape = (w, h, 4)
+ 
+    # canvas.tostring_argb give pixmap in ARGB mode. Roll the ALPHA channel to have it in RGBA mode
+    buf = np.roll(buf, 3, axis=2)
+    image = Image.frombytes("RGBA", (w, h), buf.tostring())
+    image = np.asarray(image)
+    return image
 
